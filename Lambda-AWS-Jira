@@ -1,0 +1,42 @@
+# this a code I created from scratch to fetch Findings from AWS to Jira
+# specificly to work on AWS sandbox and Jira Sandbox
+# this is a first test 
+
+import boto3
+import requests
+
+def lambda_handler(event, context):
+    # Extract Security Hub findings from the event
+    findings = event['detail']['findings']
+    
+    # Iterate through findings
+    for finding in findings:
+        # Extract necessary data from the finding
+        title = finding['Title']
+        description = finding['Description']
+        severity = finding['Severity']['Label']
+        
+        # Format AWS findings into Jira issue creation payload
+        jira_payload = {
+            'fields': {
+                'project': {'key': 'CSE'},
+                'summary': f'AWS Security Finding: {title}',
+                'description': f'Severity: {severity}\nDescription: {description}'
+            }
+        }
+        
+        # Make API call to create a Jira issue
+        jira_api_url = 'https://sbsde-sandbox-771.atlassian.net/jira/software/c/projects/CSE/boards/58'
+        headers = {
+            'Authorization': 'Bearer API-Auth-key',
+            
+            'Content-Type': 'application/json'
+        }
+        
+        response = requests.post(jira_api_url, json=jira_payload, headers=headers)
+        
+        # Check response status
+        if response.status_code == 201:
+            print(f'Jira issue created successfully for finding: {title}')
+        else:
+            print(f'Failed to create Jira issue for finding: {title}. Status code: {response.status_code}')
